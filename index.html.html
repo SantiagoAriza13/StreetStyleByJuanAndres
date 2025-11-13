@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreetStyle by Juan Andrés</title>
+    <style>
+        /* ESTILOS GENERALES */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        header {
+            background-color: #1c1c1c;
+            color: #fff;
+            padding: 1rem;
+            text-align: center;
+        }
+        header h1 { margin: 0; font-size: 2rem; }
+        header p { margin: 0.3rem 0 1rem; font-size: 1rem; }
+        nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        nav button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+        nav button:hover, nav button.active { background-color: #cf1b1b; }
+
+        /* GRID DE PRODUCTOS */
+        main#productos-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            justify-items: center;
+            padding: 1rem;
+        }
+        .producto {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 280px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .producto:hover { transform: translateY(-3px); }
+        .producto img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .producto-info {
+            padding: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .producto-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+        }
+        .producto-info p {
+            margin: 0 0 0.5rem;
+            font-size: 0.9rem;
+            flex: 1;
+        }
+        .producto-info .precio {
+            font-weight: bold;
+            margin-bottom: 0.8rem;
+        }
+        .producto-info button {
+            background-color: #cf1b1b;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+        .producto-info button:hover { background-color: #a51515; }
+
+        /* CARRITO */
+        aside#cart {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 320px;
+            height: 100vh;
+            background-color: #fafafa;
+            border-left: 1px solid #e0e0e0;
+            box-shadow: -2px 0 4px rgba(0,0,0,0.05);
+            padding: 1rem;
+            overflow-y: auto;
+            z-index: 100;
+        }
+        aside#cart h2 { margin-top: 0; font-size: 1.4rem; }
+        #cart-items { margin-top: 1rem; }
+        .cart-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.7rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .cart-item img {
+            width: 50px; height: 50px;
+            object-fit: cover;
+            margin-right: 0.5rem;
+        }
+        .cart-item-info {
+            flex: 1;
+            margin-right: 0.5rem;
+        }
+        .cart-item-info p { margin: 0; font-size: 0.85rem; }
+        .cart-item-info .cart-item-precio { font-weight: bold; }
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+        }
+        .quantity-controls button {
+            background-color: #e0e0e0;
+            color: #333;
+            border: none;
+            padding: 0.2rem 0.5rem;
+            margin: 0 0.1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        .quantity-controls span { min-width: 20px; text-align: center; }
+        .cart-item-remove {
+            background: none;
+            border: none;
+            color: #cf1b1b;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.2rem;
+        }
+        #cart-total {
+            font-weight: bold;
+            margin-top: 1rem;
+            font-size: 1.1rem;
+        }
+        #finalizar-compra {
+            width: 100%;
+            margin-top: 1rem;
+            padding: 0.6rem 1rem;
+            background-color: #007a0d;
+            border: none;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        #finalizar-compra:hover { background-color: #005f08; }
+        #paypal-button-container { margin-top: 1rem; }
+        @media (max-width: 768px) {
+            aside#cart {
+                position: static;
+                width: 100%;
+                height: auto;
+                border-left: none;
+                border-top: 1px solid #e0e0e0;
+                box-shadow: none;
+            }
+        }
+    </style>
+    <!-- PayPal SDK en modo sandbox -->
+    <script src="https://www.paypal.com/sdk/js?client-id=sb&currency=COP" data-sdk-integration-source="button-factory"></script>
+</head>
+<body>
+    <header>
+        <h1>StreetStyle by Juan Andrés</h1>
+        <p>Moda urbana cómoda y auténtica</p>
+        <nav>
+            <button class="filter-btn active" data-filter="todos">Todos</button>
+            <button class="filter-btn" data-filter="Hoodies">Hoodies</button>
+            <button class="filter-btn" data-filter="Gorras">Gorras</button>
+            <button class="filter-btn" data-filter="Busos oversize">Busos oversize</button>
+        </nav>
+    </header>
+
+    <main id="productos-container"></main>
+
+    <aside id="cart">
+        <h2>Carrito</h2>
+        <div id="cart-items"></div>
+        <div id="cart-total"></div>
+        <div id="paypal-button-container" style="display:none;"></div>
+        <button id="finalizar-compra">Finalizar compra</button>
+    </aside>
+
+    <script>
+    /* ==== PRODUCTOS ==== */
+    const productos = [
+        { id: 1, nombre: 'Black Rebel Hoodie', categoria: 'Hoodies', precio: 120000,
+          imagen: 'https://images.pexels.com/photos/34659024/pexels-photo-34659024.jpeg' },
+        { id: 2, nombre: 'Urban Edge Hoodie', categoria: 'Hoodies', precio: 125000,
+          imagen: 'https://upload.wikimedia.org/wikipedia/commons/f/fa/Hoodie_man.jpg' },
+        { id: 3, nombre: 'Classic Black Cap', categoria: 'Gorras', precio: 70000,
+          imagen: 'https://images.pexels.com/photos/18893143/pexels-photo-18893143.jpeg' },
+        { id: 4, nombre: 'Cool Blue Cap', categoria: 'Gorras', precio: 65000,
+          imagen: 'https://upload.wikimedia.org/wikipedia/commons/6/64/Baseball_cap.png' },
+        { id: 5, nombre: 'White Oversized Sweatshirt', categoria: 'Busos oversize', precio: 95000,
+          imagen: 'https://images.pexels.com/photos/29738018/pexels-photo-29738018.jpeg' },
+        { id: 6, nombre: 'Grey Oversized Sweatshirt', categoria: 'Busos oversize', precio: 99000,
+          imagen: 'https://images.pexels.com/photos/30257616/pexels-photo-30257616.jpeg' },
+        { id: 7, nombre: 'Sporty Gray Hoodie', categoria: 'Hoodies', precio: 110000,
+          imagen: 'https://images.pexels.com/photos/7869555/pexels-photo-7869555.jpeg' },
+        { id: 8, nombre: 'Vintage Red Cap', categoria: 'Gorras', precio: 75000,
+          imagen: 'https://images.pexels.com/photos/5691354/pexels-photo-5691354.jpeg' },
+        { id: 9, nombre: 'Black Oversized Sweatshirt', categoria: 'Busos oversize', precio: 97000,
+          imagen: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Neff-corpo-hd-blk-11-prod.jpg' }
+    ];
+
+    const contenedorProductos = document.getElementById('productos-container');
+    const botonesFiltro = document.querySelectorAll('.filter-btn');
+    const cartItemsContainer = document.getElementById('cart-items');
+    const cartTotalContainer = document.getElementById('cart-total');
+    const paypalContainer = document.getElementById('paypal-button-container');
+    const finalizarBtn = document.getElementById('finalizar-compra');
+
+    // Carrito guardado en localStorage
+    let carrito = JSON.parse(localStorage.getItem('carrito')) || [];
+
+    function renderProductos(listado) {
+        contenedorProductos.innerHTML = '';
+        listado.forEach(producto => {
+            const card = document.createElement('div');
+            card.classList.add('producto');
+            const img = document.createElement('img');
+            img.src = producto.imagen;
+            img.alt = producto.nombre;
+            const info = document.createElement('div');
+            info.classList.add('producto-info');
+            const titulo = document.createElement('h3');
+            titulo.textContent = producto.nombre;
+            const precio = document.createElement('p');
+            precio.classList.add('precio');
+            precio.textContent = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP' }).format(producto.precio);
+            const btn = document.createElement('button');
+            btn.textContent = 'Añadir al carrito';
+            btn.addEventListener('click', () => agregarAlCarrito(producto.id));
+            info.appendChild(titulo);
+            info.appendChild(precio);
+            info.appendChild(btn);
+            card.appendChild(img);
+            card.appendChild(info);
+            contenedorProductos.appendChild(card);
+        });
+    }
+
+    function filtrarProductos(categoria) {
+        if (categoria === 'todos') {
+            renderProductos(productos);
+        } else {
+            const filtrados = productos.filter(p => p.categoria === categoria);
+            renderProductos(filtrados);
+        }
+    }
+
+    botonesFiltro.forEach(btn => {
+        btn.addEventListener('click', () => {
+            botonesFiltro.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            filtrarProductos(btn.dataset.filter);
+        });
+    });
+
+    function agregarAlCarrito(id) {
+        const prod = productos.find(p => p.id === id);
+        const item = carrito.find(i => i.id === id);
+        if (item) item.cantidad += 1;
+        else carrito.push({ ...prod, cantidad: 1 });
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        renderCarrito();
+    }
+
+    function cambiarCantidad(id, delta) {
+        const item = carrito.find(i => i.id === id);
+        if (!item) return;
+        item.cantidad += delta;
+        if (item.cantidad <= 0) {
+            carrito = carrito.filter(i => i.id !== id);
+        }
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        renderCarrito();
+    }
+
+    function eliminarDelCarrito(id) {
+        carrito = carrito.filter(i => i.id !== id);
+        localStorage.setItem('carrito', JSON.stringify(carrito));
+        renderCarrito();
+    }
+
+    function iniciarPayPal(total) {
+        const usdRate = 0.00025; // conversión aproximada COP a USD
+        const totalUSD = (total * usdRate).toFixed(2);
+        paypal.Buttons({
+            style: { layout:'vertical', color:'blue', shape:'rect', label:'pay' },
+            createOrder: function(data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            currency_code: 'USD',
+                            value: totalUSD
+                        }
+                    }]
+                });
+            },
+            onApprove: function(data, actions) {
+                return actions.order.capture().then(function(details) {
+                    alert('Pago completado por ' + details.payer.name.given_name);
+                    carrito = [];
+                    localStorage.setItem('carrito', JSON.stringify(carrito));
+                    renderCarrito();
+                });
+            }
+        }).render('#paypal-button-container');
+    }
+
+    function renderCarrito() {
+        cartItemsContainer.innerHTML = '';
+        let total = 0;
+        carrito.forEach(item => {
+            const row = document.createElement('div');
+            row.classList.add('cart-item');
+            const img = document.createElement('img');
+            img.src = item.imagen;
+            img.alt = item.nombre;
+            const info = document.createElement('div');
+            info.classList.add('cart-item-info');
+            const name = document.createElement('p');
+            name.textContent = item.nombre;
+            const price = document.createElement('p');
+            price.classList.add('cart-item-precio');
+            const subtotal = item.precio * item.cantidad;
+            price.textContent = new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP' }).format(subtotal);
+            info.appendChild(name);
+            info.appendChild(price);
+            const qtyDiv = document.createElement('div');
+            qtyDiv.classList.add('quantity-controls');
+            const minus = document.createElement('button');
+            minus.textContent = '-';
+            minus.addEventListener('click', () => cambiarCantidad(item.id, -1));
+            const qty = document.createElement('span');
+            qty.textContent = item.cantidad;
+            const plus = document.createElement('button');
+            plus.textContent = '+';
+            plus.addEventListener('click', () => cambiarCantidad(item.id, 1));
+            qtyDiv.appendChild(minus);
+            qtyDiv.appendChild(qty);
+            qtyDiv.appendChild(plus);
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '×';
+            removeBtn.classList.add('cart-item-remove');
+            removeBtn.setAttribute('aria-label','Eliminar');
+            removeBtn.addEventListener('click', () => eliminarDelCarrito(item.id));
+            row.appendChild(img);
+            row.appendChild(info);
+            row.appendChild(qtyDiv);
+            row.appendChild(removeBtn);
+            cartItemsContainer.appendChild(row);
+            total += subtotal;
+        });
+        cartTotalContainer.textContent = `Total: ${new Intl.NumberFormat('es-CO', { style:'currency', currency:'COP' }).format(total)}`;
+
+        // Mostrar PayPal sólo si hay total > 0
+        if (total > 0) {
+            paypalContainer.style.display = 'block';
+            paypalContainer.innerHTML = '';
+            iniciarPayPal(total);
+        } else {
+            paypalContainer.style.display = 'none';
+            paypalContainer.innerHTML = '';
+        }
+    }
+
+    finalizarBtn.addEventListener('click', () => {
+        if (carrito.length === 0) {
+            alert('El carrito está vacío.');
+            return;
+        }
+        if (confirm('¿Deseas finalizar la compra?')) {
+            alert('¡Gracias por tu compra!');
+            carrito = [];
+            localStorage.setItem('carrito', JSON.stringify(carrito));
+            renderCarrito();
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderProductos(productos);
+        renderCarrito();
+    });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
